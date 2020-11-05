@@ -1,3 +1,6 @@
+/* OpenMP */
+#include <omp.h>
+
 /* assert */
 #include <assert.h>
 
@@ -18,7 +21,9 @@ csort(unsigned const k,
     return -1;
   }
 
+# pragma omp parallel for
   for (unsigned i = 0; i < n; i++) {
+    # pragma omp atmoic
     count[in[i]]++;
   }
 
@@ -29,8 +34,11 @@ csort(unsigned const k,
     total += counti;
   }
 
+# pragma omp parallel for
   for (unsigned i = 0; i < n; i++) {
+    # pragma omp critical
     out[count[in[i]]] = in[i];
+    # pragma omp atomic
     count[in[i]]++;
   }
 
