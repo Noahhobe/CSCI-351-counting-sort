@@ -16,24 +16,36 @@ csort(unsigned const k,
       unsigned const * const in,
       unsigned       * const out)
 {
-  unsigned * const count = calloc(k + 1, sizeof(*count));
+  unsigned * const count = calloc(k + 1, omp_get_num_threads() * sizeof(*count));
   if (NULL == count) {
     return -1;
   }
 
+  double ts1 = omp_get_wtime();
 # pragma omp parallel for
   for (unsigned i = 0; i < n; i++) {
     # pragma omp atmoic
     count[in[i]]++;
   }
+  double te1 = omp_get_wtime();
+  //printf("Timer 1: %lf", ts1- te1);
 
+
+  double ts2 = omp_get_wtime();
   unsigned total = 0;
+# pragma omp parallel for num_threads(omp_get_num_threads())
   for (unsigned i = 0; i <= k; i++) {
     unsigned const counti = count[i];
-    count[i] = total;
-    total += counti;
+    count[i + (i * omp_get_thread_num())] = count[i];
   }
+  for (unsigned i = 0; i < k * omp_get_num_threads(); i++){
+    total  += count[i];
+  }
+  double te2 = omp_get_wtime();
+  //printf("Timer 2: %lf", ts2- te2);
 
+
+  double ts3 = omp_get_wtime();
 # pragma omp parallel for
   for (unsigned i = 0; i < n; i++) {
     # pragma omp critical
@@ -41,6 +53,9 @@ csort(unsigned const k,
     # pragma omp atomic
     count[in[i]]++;
   }
+  double te3 = omp_get_wtime();
+  //printf("Timer 3: %lf", ts3- te3);
+
 
   free(count);
 
